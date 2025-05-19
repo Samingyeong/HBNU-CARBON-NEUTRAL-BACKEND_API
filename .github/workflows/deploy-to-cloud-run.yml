@@ -1,0 +1,46 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main  # 메인 브랜치에 푸시될 때 실행
+
+env:
+  PROJECT_ID: carbon-project-hanbat  # Google Cloud 프로젝트 ID
+  SERVICE_NAME: carbon-neutral-api   # Cloud Run 서비스 이름
+  REGION: asia-northeast3            # 서울 리전
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ env.PROJECT_ID }}
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        export_default_credentials: true
+
+    - name: Authorize Docker push
+      run: gcloud auth configure-docker
+
+    - name: Build and push container
+      run: |
+        docker build -t gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} .
+        docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+
+    - name: Deploy to Cloud Run
+      run: |
+        gcloud run deploy ${{ env.SERVICE_NAME }} \
+          --image gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+          --platform managed \
+          --region ${{ env.REGION }} \
+          --allow-unauthenticated \
+          --set-env-vars="GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json" \
+          --set-env-vars="MONGO_URL=${{ secrets.MONGO_URL }}" \
+          --set-env-vars="MONGO_DB_NAME=${{ secrets.MONGO_DB_NAME }}" \
+          --set-env-vars="ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}"

@@ -95,10 +95,62 @@ async function analyzeImage(file) {
 }
 ```
 
+## Docker 지원
+
+이 프로젝트는 Docker를 사용하여 쉽게 실행할 수 있습니다.
+
+### Docker로 실행하기
+
+1. Docker 이미지 빌드:
+   ```bash
+   docker build -t carbon-neutral-api .
+   ```
+
+2. Docker 컨테이너 실행:
+   ```bash
+   docker run -p 8000:8000 -v $(pwd)/carbon-project-hanbat-5cbc71a30dff.json:/app/credentials.json:ro \
+     -e GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json \
+     -e MONGO_URL=mongodb://host.docker.internal:27017 \
+     -e MONGO_DB_NAME=recycling_db \
+     -e ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000 \
+     carbon-neutral-api
+   ```
+
+### Docker Compose로 실행하기
+
+MongoDB와 함께 애플리케이션을 실행하려면:
+
+```bash
+docker-compose up
+```
+
+## CI/CD 파이프라인
+
+이 프로젝트는 GitHub Actions를 사용하여 Google Cloud Run에 자동으로 배포됩니다.
+
+### 배포 설정
+
+1. GitHub 저장소에 다음 시크릿을 설정하세요:
+   - `GCP_SA_KEY`: Google Cloud 서비스 계정 키 (JSON 형식)
+   - `MONGO_URL`: MongoDB 연결 문자열
+   - `MONGO_DB_NAME`: MongoDB 데이터베이스 이름
+   - `ALLOWED_ORIGINS`: 허용된 오리진 목록
+
+2. 메인 브랜치에 푸시하면 자동으로 Cloud Run에 배포됩니다.
+
+## 서버 실행 방법
+
+### 가상 환경 사용
+```bash
+source venv/bin/activate
+python -m uvicorn app.main:app --reload
+```
+
+### Docker 사용
+```bash
+docker-compose up
+```
+
 ## License
 
 [MIT License](LICENSE)
-
-
-### 서버 실행 
-: python -m uvicorn app.main:app --reload
