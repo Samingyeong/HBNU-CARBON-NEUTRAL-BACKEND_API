@@ -25,16 +25,32 @@ jobs:
         service_account_key: ${{ secrets.GCP_SA_KEY }}
         export_default_credentials: true
 
+    - name: Check Google Cloud configuration
+      run: |
+        gcloud config list
+        gcloud projects describe ${{ env.PROJECT_ID }} || echo "Project not found or no access"
+        gcloud services list --available | grep -E 'run|container|build' || echo "APIs may not be enabled"
+
     - name: Authorize Docker push
       run: gcloud auth configure-docker
 
     - name: Build and push container
       run: |
-        docker build -t gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} .
-        docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+        echo "Building Docker image..."
+        docker build -t gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} . || { echo "Docker build failed"; exit 1; }
+        echo "Pushing Docker image to Container Registry..."
+        docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} || { echo "Docker push failed"; exit 1; }
+
+    - name: Check if Cloud Run API is enabled
+      run: |
+        gcloud services list --enabled | grep run.googleapis.com || {
+          echo "Cloud Run API is not enabled. Enabling it now..."
+          gcloud services enable run.googleapis.com
+        }
 
     - name: Deploy to Cloud Run
       run: |
+        echo "Deploying to Cloud Run..."
         gcloud run deploy ${{ env.SERVICE_NAME }} \
           --image gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
           --platform managed \
@@ -43,4 +59,15 @@ jobs:
           --set-env-vars="GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json" \
           --set-env-vars="MONGO_URL=${{ secrets.MONGO_URL }}" \
           --set-env-vars="MONGO_DB_NAME=${{ secrets.MONGO_DB_NAME }}" \
-          --set-env-vars="ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}"
+          --set-env-vars="ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}" || {
+            echo "Deployment failed. Checking service account permissions..."
+            gcloud projects get-iam-policy ${{ env.PROJECT_ID }} --format=json | grep -A 5 "$(echo ${{ secrets.GCP_SA_KEY }} | jq -r '.client_email')" || echo "Service account not found or has insufficient permissions"
+            exit 1
+          }
+
+    - name: Verify deployment
+      run: |
+        echo "Verifying deployment..."
+        SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format='value(status.url)')
+        echo "Service URL: $SERVICE_URL"
+        curl -s -o /dev/null -w "%{http_code}" $SERVICE_URL || echo "Service is not responding"
