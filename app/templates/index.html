@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이미지 분석 서비스</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .upload-section {
+            flex: 1;
+            min-width: 300px;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .results-section {
+            flex: 2;
+            min-width: 500px;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            margin-top: 15px;
+            border-radius: 4px;
+        }
+        .result-item {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+        .result-item h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .result-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .result-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .confidence {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        .tab-container {
+            margin-bottom: 20px;
+        }
+        .tab-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab-button {
+            padding: 10px 15px;
+            background-color: #f1f1f1;
+            border: none;
+            cursor: pointer;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab-button.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            padding: 15px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-top: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .material-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .material-list li {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .bin-color {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .steps ol {
+            margin-top: 5px;
+        }
+        .composite-material {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f0f7ff;
+        }
+        .recyclable {
+            color: #27ae60;
+        }
+        .non-recyclable {
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <h1>이미지 분석 서비스</h1>
+    
+    <div class="container">
+        <div class="upload-section">
+            <h2>이미지 업로드</h2>
+            <form id="upload-form" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="image-file">이미지 선택:</label>
+                    <input type="file" id="image-file" name="file" accept="image/*" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="analysis-type">분석 유형:</label>
+                    <select id="analysis-type" name="analysis_type">
+                        <option value="recycling">재활용 분석</option>
+                        <option value="carbon-footprint">탄소 발자국 분석</option>
+                        <option value="labels">라벨 감지</option>
+                        <option value="text">텍스트 감지</option>
+                        <option value="objects">객체 감지</option>
+                    </select>
+                </div>
+                
+                <button type="submit">분석하기</button>
+            </form>
+            
+            <div id="image-preview">
+                <h3>이미지 미리보기</h3>
+                <img id="preview-image" class="preview-image" src="" alt="이미지 미리보기" style="display: none;">
+            </div>
+        </div>
+        
+        <div class="results-section">
+            <h2>분석 결과</h2>
+            
+            <div class="loading" id="loading">
+                <p>분석 중...</p>
+            </div>
+            
+            <div class="tab-container" id="results-tabs">
+                <div class="tab-buttons">
+                    <button class="tab-button" data-tab="recycling">재활용 분석</button>
+                    <button class="tab-button" data-tab="carbon">탄소 발자국</button>
+                    <button class="tab-button" data-tab="labels">라벨</button>
+                    <button class="tab-button" data-tab="text">텍스트</button>
+                    <button class="tab-button" data-tab="objects">객체</button>
+                </div>
+                
+                <div class="tab-content" id="recycling-tab">
+                    <div class="result-item">
+                        <h3>재활용 분석 결과</h3>
+                        <div id="recycling-content"></div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="carbon-tab">
+                    <div class="result-item">
+                        <h3>탄소 발자국 분석</h3>
+                        <div id="carbon-content"></div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="labels-tab">
+                    <div class="result-item">
+                        <h3>감지된 라벨</h3>
+                        <ul class="result-list" id="labels-list"></ul>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="text-tab">
+                    <div class="result-item">
+                        <h3>감지된 텍스트</h3>
+                        <div id="text-content"></div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="objects-tab">
+                    <div class="result-item">
+                        <h3>감지된 객체</h3>
+                        <ul class="result-list" id="objects-list"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 이미지 미리보기
+            const imageInput = document.getElementById('image-file');
+            const previewImage = document.getElementById('preview-image');
+            
+            imageInput.addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImage.src = e.target.result;
+                        previewImage.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // 탭 전환
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    
+                    this.classList.add('active');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                });
+            });
+            
+            // 폼 제출
+            const form = document.getElementById('upload-form');
+            const loading = document.getElementById('loading');
+            
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const analysisType = document.getElementById('analysis-type').value;
+                
+                // 로딩 표시
+                loading.style.display = 'block';
+                
+                // 결과 초기화
+                document.getElementById('recycling-content').innerHTML = '';
+                document.getElementById('carbon-content').innerHTML = '';
+                document.getElementById('labels-list').innerHTML = '';
+                document.getElementById('text-content').innerHTML = '';
+                document.getElementById('objects-list').innerHTML = '';
+                
+                try {
+                    // 분석 유형에 따라 다른 엔드포인트 호출
+                    let endpoint = '/analyze-image/';
+                    if (analysisType === 'recycling') {
+                        endpoint = '/analyze-recycling/';
+                    } else if (analysisType === 'carbon-footprint') {
+                        endpoint = '/analyze-carbon-footprint/';
+                    } else if (analysisType === 'text') {
+                        endpoint = '/detect-text/';
+                    } else if (analysisType === 'objects') {
+                        endpoint = '/detect-objects/';
+                    }
+                    
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('API 호출 실패');
+                    }
+                    
+                    const result = await response.json();
+                    displayResults(result, analysisType);
+                } catch (error) {
+                    console.error('오류 발생:', error);
+                    alert('이미지 분석 중 오류가 발생했습니다.');
+                } finally {
+                    loading.style.display = 'none';
+                }
+            });
+            
+            // 결과 표시 함수
+            function displayResults(result, analysisType) {
+                // 기본 라벨, 객체 정보 표시
+                if (result.detected_labels) {
+                    const labelsList = document.getElementById('labels-list');
+                    result.detected_labels.forEach(label => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `${label.description} <span class="confidence">(신뢰도: ${(label.score * 100).toFixed(2)}%)</span>`;
+                        labelsList.appendChild(li);
+                    });
+                }
+                
+                if (result.detected_objects) {
+                    const objectsList = document.getElementById('objects-list');
+                    result.detected_objects.forEach(obj => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `${obj.name} <span class="confidence">(신뢰도: ${(obj.score * 100).toFixed(2)}%)</span>`;
+                        objectsList.appendChild(li);
+                    });
+                }
+                
+                // 텍스트 표시
+                if (result.text) {
+                    const textContent = document.getElementById('text-content');
+                    textContent.innerHTML = `<p>${result.text}</p>`;
+                }
+                
+                // 탄소 발자국 분석 표시
+                if (result.assessment) {
+                    const carbonContent = document.getElementById('carbon-content');
+                    
+                    let assessmentClass = '';
+                    if (result.assessment.includes('Positive')) {
+                        assessmentClass = 'color: green;';
+                    } else if (result.assessment.includes('Neutral')) {
+                        assessmentClass = 'color: orange;';
+                    } else {
+                        assessmentClass = 'color: red;';
+                    }
+                    
+                    let html = `
+                        <p><strong>평가:</strong> <span style="${assessmentClass}">${result.assessment}</span></p>
+                        <p><strong>총 탄소 점수:</strong> ${result.total_carbon_score.toFixed(2)}</p>
+                    `;
+                    
+                    if (result.carbon_impact_details && result.carbon_impact_details.length > 0) {
+                        html += '<h4>탄소 영향 세부 정보:</h4><ul>';
+                        result.carbon_impact_details.forEach(item => {
+                            html += `
+                                <li>
+                                    <strong>${item.item}</strong>: ${item.carbon_value}
+                                    (신뢰도: ${(item.confidence * 100).toFixed(2)}%, 
+                                    가중 영향: ${item.weighted_impact.toFixed(2)})
+                                </li>
+                            `;
+                        });
+                        html += '</ul>';
+                    }
+                    
+                    carbonContent.innerHTML = html;
+                }
+                
+                // 재활용 분석 결과 표시
+                if (result.recycling_analysis) {
+                    const recyclingContent = document.getElementById('recycling-content');
+                    const analysis = result.recycling_analysis;
+                    
+                    let html = '<div class="recycling-results">';
+                    
+                    // 일반 지침
+                    html += `<p><strong>일반 지침:</strong> ${analysis.recommendations.general_instructions}</p>`;
+                    
+                    // 재활용 가능 재질
+                    if (analysis.recommendations.recyclable_materials.length > 0) {
+                        html += '<div class="recyclable-materials">';
+                        html += '<h4 class="recyclable">재활용 가능 재질</h4>';
+                        html += '<ul class="material-list">';
+                        
+                        analysis.recommendations.recyclable_materials.forEach(material => {
+                            html += `
+                                <li>
+                                    <strong>${getKoreanMaterialName(material.type)}</strong>
+                                    <span class="confidence">(신뢰도: ${(material.confidence * 100).toFixed(2)}%)</span>
+                                    <div class="bin-info">분리수거함: <span class="bin-color" style="background-color: ${getBinColor(material.bin_color)};">${material.bin_color}</span></div>
+                                    <div class="items">감지된 항목: ${material.items.join(', ')}</div>
+                                    <div class="steps">
+                                        <strong>준비 단계:</strong>
+                                        <ol>
+                                            ${material.preparation_steps.map(step => `<li>${step}</li>`).join('')}
+                                        </ol>
+                                    </div>
+                                </li>
+                            `;
+                        });
+                        
+                        html += '</ul>';
+                        html += '</div>';
+                    }
+                    
+                    // 재활용 불가능 재질
+                    if (analysis.recommendations.non_recyclable_materials.length > 0) {
+                        html += '<div class="non-recyclable-materials">';
+                        html += '<h4 class="non-recyclable">재활용 불가능 재질</h4>';
+                        html += '<ul class="material-list">';
+                        
+                        analysis.recommendations.non_recyclable_materials.forEach(material => {
+                            html += `
+                                <li>
+                                    <strong>${getKoreanMaterialName(material.type)}</strong>
+                                    <span class="confidence">(신뢰도: ${(material.confidence * 100).toFixed(2)}%)</span>
+                                    <div class="bin-info">배출 방법: <span class="bin-color" style="background-color: ${getBinColor(material.bin_color)};">${material.bin_color}</span></div>
+                                    <div class="items">감지된 항목: ${material.items.join(', ')}</div>
+                                    <div class="steps">
+                                        <strong>준비 단계:</strong>
+                                        <ol>
+                                            ${material.preparation_steps.map(step => `<li>${step}</li>`).join('')}
+                                        </ol>
+                                    </div>
+                                </li>
+                            `;
+                        });
+                        
+                        html += '</ul>';
+                        html += '</div>';
+                    }
+                    
+                    // 복합 재질
+                    if (analysis.recommendations.composite_materials.length > 0) {
+                        html += '<div class="composite-materials">';
+                        html += '<h4>복합 재질 처리 방법</h4>';
+                        
+                        analysis.recommendations.composite_materials.forEach(composite => {
+                            html += `
+                                <div class="composite-material">
+                                    <h5>${composite.description}</h5>
+                                    <p><strong>재질:</strong> ${composite.materials.map(m => getKoreanMaterialName(m)).join(' + ')}</p>
+                                    <p><strong>분리 방법:</strong> ${composite.separation_method}</p>
+                                    <div class="steps">
+                                        <strong>단계:</strong>
+                                        <ol>
+                                            ${composite.steps.map(step => `<li>${step}</li>`).join('')}
+                                        </ol>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        html += '</div>';
+                    }
+                    
+                    html += '</div>';
+                    recyclingContent.innerHTML = html;
+                }
+                
+                // 해당 탭 활성화
+                let activeTab = 'labels';
+                if (analysisType === 'recycling') {
+                    activeTab = 'recycling';
+                } else if (analysisType === 'carbon-footprint') {
+                    activeTab = 'carbon';
+                } else if (analysisType === 'text') {
+                    activeTab = 'text';
+                } else if (analysisType === 'objects') {
+                    activeTab = 'objects';
+                }
+                
+                document.querySelector(`[data-tab="${activeTab}"]`).click();
+            }
+            
+            // 한국어 재질 이름 변환 함수
+            function getKoreanMaterialName(material_type) {
+                const material_names = {
+                    "plastic": "플라스틱",
+                    "paper": "종이",
+                    "glass": "유리",
+                    "metal": "금속/캔",
+                    "food_waste": "음식물 쓰레기",
+                    "general_waste": "일반 쓰레기",
+                    "electronics": "전자제품",
+                    "textile": "의류/섬유"
+                };
+                
+                return material_names[material_type] || material_type;
+            }
+            
+            // 분리수거함 색상 변환 함수
+            function getBinColor(bin_color) {
+                const color_map = {
+                    "파란색": "#3498db",
+                    "초록색": "#2ecc71",
+                    "갈색": "#d35400",
+                    "노란색": "#f1c40f",
+                    "검정색": "#34495e",
+                    "별도 수거함": "#9b59b6"
+                };
+                
+                return color_map[bin_color] || "#95a5a6";
+            }
+        });
+    </script>
+</body>
+</html>

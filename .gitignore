@@ -1,0 +1,16 @@
+# Python virtual environment
+venv/
+.env
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Google Cloud credentials
+carbon-project-hanbat-5cbc71a30dff.json
