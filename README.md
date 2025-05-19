@@ -98,3 +98,7 @@ async function analyzeImage(file) {
 ## License
 
 [MIT License](LICENSE)
+
+
+### 서버 실행 
+: python -m uvicorn app.main:app --reload

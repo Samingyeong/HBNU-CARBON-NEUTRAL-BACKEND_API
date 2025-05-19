@@ -52,3 +52,9 @@ async def init_db():
 
     # 생성 시간에 인덱스 생성 (최근 이미지 조회용)
     await database.images.create_index("created_at")
+
+    # 사용자 ID에 인덱스 생성 (사용자별 이미지 조회용)
+    await database.images.create_index("user_id")
+
+    # 카테고리에 인덱스 생성 (카테고리별 이미지 조회용)
+    await database.images.create_index("category")

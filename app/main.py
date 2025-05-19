@@ -322,11 +322,13 @@ async def analyze_recycling(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"재활용 분석 중 오류 발생: {str(e)}")
 
 @app.post("/analyze-and-save/")
-async def analyze_and_save(file: UploadFile = File(...)):
+async def analyze_and_save(file: UploadFile = File(...), user_id: str = None, category: str = None):
     """
     이미지를 분석하고 MongoDB에 저장합니다.
 
     - **file**: 분석할 이미지 파일
+    - **user_id**: 사용자 ID (선택 사항)
+    - **category**: 이미지 카테고리 (선택 사항)
 
     이미지 분석 결과와 저장된 이미지 정보를 반환합니다.
     """
@@ -335,7 +337,7 @@ async def analyze_and_save(file: UploadFile = File(...)):
         content = await file.read()
 
         # 이미지를 MongoDB에 저장
-        image_doc = await image_service.save_image_to_db(file, content)
+        image_doc = await image_service.save_image_to_db(file, content, user_id, category)
 
         # 이미지 분석
         labels, objects = await image_service.analyze_image_with_vision(content)
@@ -356,6 +358,10 @@ async def analyze_and_save(file: UploadFile = File(...)):
             "image_id": image_doc["image_id"],
             "filename": image_doc["filename"],
             "content_type": image_doc["content_type"],
+            "user_id": user_id,
+            "category": category,
+            "date": image_doc["date"],
+            "time": image_doc["time"],
             "recycling_analysis": recycling_analysis,
             "detected_labels": analysis_doc["detected_labels"],
             "detected_objects": analysis_doc["detected_objects"]
@@ -408,16 +414,54 @@ async def get_image_data(image_id: str):
         raise HTTPException(status_code=500, detail=f"이미지 데이터 조회 중 오류 발생: {str(e)}")
 
 @app.get("/images/recent")
-async def get_recent_images(limit: int = 10):
+async def get_recent_images(limit: int = 10, user_id: str = None):
     """
     최근 분석된 이미지 목록을 조회합니다.
 
     - **limit**: 조회할 이미지 수 (기본값: 10)
+    - **user_id**: 특정 사용자의 이미지만 조회할 경우 사용자 ID (선택 사항)
 
     최근 이미지 목록을 반환합니다.
     """
     try:
-        images = await image_service.get_recent_images(limit)
+        images = await image_service.get_recent_images(limit, user_id)
         return images
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"최근 이미지 조회 중 오류 발생: {str(e)}")
+
+@app.get("/images/user/{user_id}")
+async def get_user_images(user_id: str, limit: int = 50):
+    """
+    특정 사용자의 이미지 목록을 조회합니다.
+
+    - **user_id**: 사용자 ID
+    - **limit**: 조회할 최대 이미지 수 (기본값: 50)
+
+    사용자의 이미지 목록을 반환합니다.
+    """
+    try:
+        images = await image_service.get_images_by_user_id(user_id, limit)
+        return images
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"사용자 이미지 조회 중 오류 발생: {str(e)}")
+
+@app.get("/images/category/{category}")
+async def get_category_images(category: str, limit: int = 50, user_id: str = None):
+    """
+    특정 카테고리의 이미지 목록을 조회합니다.
+
+    - **category**: 이미지 카테고리
+    - **limit**: 조회할 최대 이미지 수 (기본값: 50)
+    - **user_id**: 특정 사용자의 이미지만 조회할 경우 사용자 ID (선택 사항)
+
+    카테고리별 이미지 목록을 반환합니다.
+    """
+    try:
+        images = await image_service.get_images_by_category(category, limit, user_id)
+        return images
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"카테고리 이미지 조회 중 오류 발생: {str(e)}")
