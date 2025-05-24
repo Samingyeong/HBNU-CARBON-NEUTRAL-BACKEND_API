@@ -1,156 +1,42 @@
-# HBNU Carbon Neutral Backend API
+## 🛠️ Tech Stack
 
-This is a FastAPI backend service that integrates with Google Vision API to analyze images for carbon footprint assessment and other vision-related tasks.
+### 🌐 Frontend
+| 기술 | 설명 |
+|------|------|
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nextjs/nextjs-original.svg" alt="Next.js" width="30"/> **Next.js** | React 기반 SSR/SSG 프레임워크 |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" alt="TypeScript" width="30"/> **TypeScript** | 정적 타입을 지원하는 JavaScript |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-plain.svg" alt="Tailwind CSS" width="30"/> **Tailwind CSS** | 유틸리티 퍼스트 CSS 프레임워크 |
+| <img src="https://framerusercontent.com/images/ss4vRQh8pN1L4zRJWusWYoD1jk.svg" alt="Framer Motion" width="30"/> **Framer Motion** | React용 애니메이션 라이브러리 |
 
-## Features
+---
 
-- Image analysis using Google Vision API
-- Label detection
-- Text detection
-- Object detection
-- Carbon footprint analysis based on image content
-- CORS support for frontend integration
+### ⚙️ State & API
+| 기술 | 설명 |
+|------|------|
+| 🐻 **Zustand** | 작고 가벼운 React 상태관리 라이브러리 |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" alt="React" width="30"/> **Context API** | 전역 상태 관리를 위한 React 내장 기능 |
+| 🧩 **Next.js API Routes** | Next.js 내장 API 라우팅 기능 |
 
-## Prerequisites
+---
 
-- Python 3.8+
-- Google Cloud account with Vision API enabled
-- Google Cloud service account key file
+### 🐍 Backend
+| 기술 | 설명 |
+|------|------|
+| <img src="https://fastapi.tiangolo.com/img/icon-white.svg" alt="FastAPI" width="30"/> **FastAPI** | Python 기반 비동기 API 서버 프레임워크 |
+| <img src="https://seeklogo.com/images/S/supabase-logo-DCC676FFE2-seeklogo.com.png" alt="Supabase" width="30"/> **Supabase** | Firebase 대안, 오픈소스 백엔드 플랫폼 |
 
-## Setup
+---
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/HBNU-CARBON-NEUTRAL-BACKEND_API.git
-   cd HBNU-CARBON-NEUTRAL-BACKEND_API
-   ```
+### 🤖 AI & APIs
+| 기술 | 설명 |
+|------|------|
+| <img src="https://seeklogo.com/images/O/openai-logo-8B9BFEDC26-seeklogo.com.png" alt="OpenAI" width="30"/> **OpenAI API** | ChatGPT 등 AI 기능 통합 |
+| <img src="https://cloud.google.com/images/products/vision/vision-api-icon.svg" alt="Google Vision" width="30"/> **Google Vision API** | 이미지 인식 및 OCR 처리 API |
 
-2. Create a virtual environment and install dependencies:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
+---
 
-3. Set up Google Cloud Vision API:
-   - Create a project in Google Cloud Console
-   - Enable the Vision API
-   - Create a service account and download the JSON key file
-   - Place the key file in a secure location
-
-4. Configure environment variables:
-   - Create a `.env` file in the project root
-   - Add the following variables:
-     ```
-     GOOGLE_APPLICATION_CREDENTIALS=path/to/your-service-account-key.json
-     ALLOWED_ORIGINS=http://localhost:3000,https://your-frontend-domain.com
-     ```
-
-## Running the API
-
-Start the development server:
-
-```bash
-uvicorn app.main:app --reload
-```
-
-The API will be available at http://127.0.0.1:8000
-
-## API Documentation
-
-Once the server is running, you can access the interactive API documentation at:
-
-- Swagger UI: http://127.0.0.1:8000/docs
-- ReDoc: http://127.0.0.1:8000/redoc
-
-## API Endpoints
-
-- `GET /`: Welcome message
-- `POST /analyze-image/`: Analyze an image to detect labels
-- `POST /detect-text/`: Detect text in an image
-- `POST /detect-objects/`: Detect objects in an image
-- `POST /analyze-carbon-footprint/`: Analyze carbon footprint based on image content
-
-## Frontend Integration
-
-To connect with a Next.js frontend:
-
-1. Ensure CORS is properly configured in the `.env` file
-2. Use the fetch API or Axios in your Next.js application to make requests to the backend
-3. Example usage:
-
-```javascript
-// Example Next.js code to call the API
-async function analyzeImage(file) {
-  const formData = new FormData();
-  formData.append('file', file);
-
-  const response = await fetch('http://localhost:8000/analyze-carbon-footprint/', {
-    method: 'POST',
-    body: formData,
-  });
-
-  const data = await response.json();
-  return data;
-}
-```
-
-## Docker 지원
-
-이 프로젝트는 Docker를 사용하여 쉽게 실행할 수 있습니다.
-
-### Docker로 실행하기
-
-1. Docker 이미지 빌드:
-   ```bash
-   docker build -t carbon-neutral-api .
-   ```
-
-2. Docker 컨테이너 실행:
-   ```bash
-   docker run -p 8000:8000 -v $(pwd)/carbon-project-hanbat-5cbc71a30dff.json:/app/credentials.json:ro \
-     -e GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json \
-     -e MONGO_URL=mongodb://host.docker.internal:27017 \
-     -e MONGO_DB_NAME=recycling_db \
-     -e ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000 \
-     carbon-neutral-api
-   ```
-
-### Docker Compose로 실행하기
-
-MongoDB와 함께 애플리케이션을 실행하려면:
-
-```bash
-docker-compose up
-```
-
-## CI/CD 파이프라인
-
-이 프로젝트는 GitHub Actions를 사용하여 Google Cloud Run에 자동으로 배포됩니다.
-
-### 배포 설정
-
-1. GitHub 저장소에 다음 시크릿을 설정하세요:
-   - `GCP_SA_KEY`: Google Cloud 서비스 계정 키 (JSON 형식)
-   - `MONGO_URL`: MongoDB 연결 문자열
-   - `MONGO_DB_NAME`: MongoDB 데이터베이스 이름
-   - `ALLOWED_ORIGINS`: 허용된 오리진 목록
-
-2. 메인 브랜치에 푸시하면 자동으로 Cloud Run에 배포됩니다.
-
-## 서버 실행 방법
-
-### 가상 환경 사용
-```bash
-source venv/bin/activate
-python -m uvicorn app.main:app --reload
-```
-
-### Docker 사용
-```bash
-docker-compose up
-```
-
-## License
-
-[MIT License](LICENSE)
+### 🧰 Tools
+| 도구 | 설명 |
+|------|------|
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg" alt="GitHub" width="30"/> **GitHub** | 소스 코드 버전 관리 |
+| <img src="https://upload.wikimedia.org/wikipedia/commons/4/45/Notion_app_logo.png" alt="Notion" width="30"/> **Notion** | 협업 및 문서 관리 툴 |
